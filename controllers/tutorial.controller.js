@@ -30,13 +30,28 @@ function Controller() {
 		});
 
 		// Save Tutorial in the database
-		tutorial.create(tutorial, (err, data) => {
-			if (err)
-				res.status(500).send({
-					message:
-						err.message || "Some error occurred while creating the Tutorial.",
+		token.findById(req, (err, data) => {
+			if (err) {
+				if (err.kind === "not_found") {
+					res.status(404).send({
+						message: `Not found token with email ${req.query.email}.`,
+					});
+				} else {
+					res.status(500).send({
+						message: "Error retrieving token with email " + req.query.email,
+					});
+				}
+			} else {
+				tutorial.create(tutorial, (err, data) => {
+					if (err)
+						res.status(500).send({
+							message:
+								err.message ||
+								"Some error occurred while creating the Tutorial.",
+						});
+					else res.send(data);
 				});
-			else res.send(data);
+			}
 		});
 	};
 
@@ -109,36 +124,67 @@ function Controller() {
 		}
 
 		console.log(req.body);
-
-		tutorial.updateById(req.params.id, new Tutorial(req.body), (err, data) => {
+		token.findById(req, (err, data) => {
 			if (err) {
 				if (err.kind === "not_found") {
 					res.status(404).send({
-						message: `Not found Tutorial with id ${req.params.id}.`,
+						message: `Not found token with email ${req.query.email}.`,
 					});
 				} else {
 					res.status(500).send({
-						message: "Error updating Tutorial with id " + req.params.id,
+						message: "Error retrieving token with email " + req.query.email,
 					});
 				}
-			} else res.send(data);
+			} else {
+				tutorial.updateById(
+					req.params.id,
+					new Tutorial(req.body),
+					(err, data) => {
+						if (err) {
+							if (err.kind === "not_found") {
+								res.status(404).send({
+									message: `Not found Tutorial with id ${req.params.id}.`,
+								});
+							} else {
+								res.status(500).send({
+									message: "Error updating Tutorial with id " + req.params.id,
+								});
+							}
+						} else res.send(data);
+					}
+				);
+			}
 		});
 	};
 
 	// Delete a Tutorial with the specified id in the request
 	this.delete = (req, res) => {
-		tutorial.remove(req.params.id, (err, data) => {
+		token.findById(req, (err, data) => {
 			if (err) {
 				if (err.kind === "not_found") {
 					res.status(404).send({
-						message: `Not found Tutorial with id ${req.params.id}.`,
+						message: `Not found token with email ${req.query.email}.`,
 					});
 				} else {
 					res.status(500).send({
-						message: "Could not delete Tutorial with id " + req.params.id,
+						message: "Error retrieving token with email " + req.query.email,
 					});
 				}
-			} else res.send({ message: `Tutorial was deleted successfully!` });
+			} else {
+				tutorial.remove(req.params.id, (err, data) => {
+					if (err) {
+						if (err.kind === "not_found") {
+							res.status(404).send({
+								message: `Not found Tutorial with id ${req.params.id}.`,
+							});
+						} else {
+							res.status(500).send({
+								message: "Could not delete Tutorial with id " + req.params.id,
+							});
+						}
+					} else res.send({ message: `Tutorial was deleted successfully!` });
+				});
+			}
 		});
 	};
 
